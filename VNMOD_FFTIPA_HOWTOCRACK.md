@@ -112,7 +112,7 @@ Thất bại → triggerKeyInvalidatedUI → SetHUDEnabled(false) + countdown th
 
 ---
 
-## 5. Patch crack (phiên bản cuối — dùng được)
+## 5. Patch crack 
 
 Script: `patch_key_bypass_test.py`  
 Input: bản **gốc** `SAVED/FFExternal.app/FFExternal` (hoặc `FFExternal.original`).
@@ -138,61 +138,7 @@ Input: bản **gốc** `SAVED/FFExternal.app/FFExternal` (hoặc `FFExternal.ori
 setIsKeyValidated:YES  →  stopExitCountdown  →  hideLockOverlay  →  (startRealtimeKeyMonitor bị NOP)
 ```
 
-### Địa chỉ **KHÔNG** được patch
-
-| Địa chỉ | Lý do |
-|---------|-------|
-| `0x1000175C8` – `0x1000176E8` | Code UI floating panel / `showSpinnerMessage` / `setupContentArea` — patch đè → crash khi bấm bánh răng |
-| `0x1000121DC` (getter `isKeyValidated` luôn YES) | Gây `viewDidAppear` bỏ qua `beginKeyAuthFlow` → `hideLockOverlay` không chạy → **màn hình trắng** |
-
----
-
-## 6. Lỗi đã gặp khi crack (bài học)
-
-| Triệu chứng | Nguyên nhân | Fix |
-|-------------|-------------|-----|
-| Crash `EXC_BAD_ACCESS` @ `0x1100080bc` | Trampoline gọi `objc_msgSend` bằng `br` absolute `0x100080bc` (sai + ASLR) | Dùng `bl` PC-relative tới `0x1000380BC`, hoặc bỏ cave |
-| Crash `objc_retain` trong `showSpinnerMessage:` | Truyền C string thay vì `NSString*` | Bỏ watermark / gọi `stringWithUTF8String:` trước |
-| Màn hình trắng/đen | Patch `isKeyValidated` = YES → skip `beginKeyAuthFlow` | NOP `tbnz` @ `0x10000A1D8`, không patch getter |
-| Menu bánh răng crash `doesNotRecognizeSelector` | Ghi trampoline đè code @ `0x1000175C8` | Nhảy `unlockSuccess`, không dùng cave |
-
----
-
-## 7. Cách chạy (developer test)
-
-### Xuất pseudocode / phân tích
-
-```bash
-cd "/FFExternal.app"
-pip install capstone
-python3 export_key_pseudocode.py --binary FFExternal.original --out ./key_auth_pseudocode
-```
-
-### Patch crack
-
-```bash
-# Luôn patch từ bản GỐC
-python3 patch_key_bypass_test.py \
-  --binary "/FFExternal.app/FFExternal" \
-  --out FFExternal.cracked
-
-cp FFExternal.cracked FFExternal
-codesign -f -s "Your Identity" .
-```
-
-### File trong thư mục app
-
-| File | Mô tả |
-|------|--------|
-| `FFExternal.original` | Backup binary sạch (copy từ Payload 4) |
-| `FFExternal.cracked` | Binary đã patch |
-| `patch_key_bypass_test.py` | Script patch |
-| `export_key_pseudocode.py` | Script export pseudocode |
-| `key_auth_pseudocode/` | Pseudocode từng hàm |
-
----
-
-## 9. Sơ đồ patch (cuối)
+## 6. Sơ đồ patch (cuối)
 
 ```mermaid
 flowchart TD
